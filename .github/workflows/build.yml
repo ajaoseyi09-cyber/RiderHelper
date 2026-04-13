@@ -1,0 +1,103 @@
+name: Build APK
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - uses: android-actions/setup-android@v2
+      - name: Create project structure and build
+        run: |
+          mkdir -p app/src/main/java/com/riderhelper
+          mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/xml
+          mkdir -p app/src/main/res/drawable
+          mkdir -p gradle/wrapper
+
+          # Move files to correct locations
+          mv MainActivity.java BootReceiver.java AlertManager.java OrderDetectorService.java AlertForegroundService.java app/src/main/java/com/riderhelper/ 2>/dev/null || true
+          mv AndroidManifest.xml app/src/main/ 2>/dev/null || true
+          mv activity_main.xml app/src/main/res/layout/ 2>/dev/null || true
+          mv strings.xml styles.xml app/src/main/res/values/ 2>/dev/null || true
+          mv accessibility_service_config.xml app/src/main/res/xml/ 2>/dev/null || true
+          mv card_background.xml app/src/main/res/drawable/ 2>/dev/null || true
+
+          # Create gradle wrapper properties
+          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
+
+          # Download gradle wrapper jar
+          curl -L "https://github.com/gradle/gradle/raw/v8.2.0/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
+
+          # Create gradlew
+          cat > gradlew << 'EOF'
+          #!/bin/sh
+          exec java -jar "$(dirname $0)/gradle/wrapper/gradle-wrapper.jar" "$@"
+          EOF
+          chmod +x gradlew
+
+          # Create root build.gradle
+          cat > build.gradle << 'EOF'
+          buildscript {
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:8.2.0' }
+          }
+          allprojects {
+              repositories { google(); mavenCentral() }
+          }
+          EOF
+
+          # Create settings.gradle
+          echo "include ':app'" > settings.gradle
+
+          # Create app/build.gradle
+          cat > app/build.gradle << 'EOF'
+          apply plugin: 'com.android.application'
+          android {
+              namespace 'com.riderhelper'
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.riderhelper"
+                  minSdk 26
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+          }
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+              implementation 'com.google.android.material:material:1.11.0'
+              implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+          }
+          EOF
+
+          # gradle.properties
+          cat > gradle.properties << 'EOF'
+          android.useAndroidX=true
+          android.enableJetifier=true
+          EOF
+
+          ./gradlew assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RiderHelper-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
