@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Rider Helper</string>
+    <string name="accessibility_service_description">Monitors Chowdeck Rider app for new orders and alerts you instantly with sound, vibration, and notification — then auto-taps the accept button for you.</string>
+</resources>
