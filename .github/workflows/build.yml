@@ -20,97 +20,29 @@ jobs:
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/xml
           mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/res/mipmap-hdpi
+          mkdir -p app/src/main/res/mipmap-mdpi
           mkdir -p gradle/wrapper
-
           mv MainActivity.java BootReceiver.java AlertManager.java OrderDetectorService.java AlertForegroundService.java app/src/main/java/com/riderhelper/ 2>/dev/null || true
           mv AndroidManifest.xml app/src/main/ 2>/dev/null || true
           mv activity_main.xml app/src/main/res/layout/ 2>/dev/null || true
-          mv strings.xml styles.xml app/src/main/res/values/ 2>/dev/null || true
+          mv strings.xml app/src/main/res/values/ 2>/dev/null || true
           mv accessibility_service_config.xml app/src/main/res/xml/ 2>/dev/null || true
           mv card_background.xml app/src/main/res/drawable/ 2>/dev/null || true
-          mkdir -p app/src/main/res/mipmap-hdpi
-          mkdir -p app/src/main/res/mipmap-mdpi
-          mkdir -p app/src/main/res/mipmap-xhdpi
-          mkdir -p app/src/main/res/mipmap-xxhdpi
-
-          # Create simple launcher icons
-          for dpi in mdpi hdpi xhdpi xxhdpi; do
-            cp app/src/main/res/drawable/card_background.xml app/src/main/res/mipmap-$dpi/ic_launcher.xml 2>/dev/null || true
-            cp app/src/main/res/drawable/card_background.xml app/src/main/res/mipmap-$dpi/ic_launcher_round.xml 2>/dev/null || true
-          done
-          
-          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
-          distributionBase=GRADLE_USER_HOME
-          distributionPath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
-          zipStoreBase=GRADLE_USER_HOME
-          zipStorePath=wrapper/dists
-          EOF
-
-          wget -q "https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar" -O gradle/wrapper/gradle-wrapper.jar || \
-          curl -sL "https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
-
-          cat > gradlew << 'GRADLEW'
-          #!/bin/sh
-          SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-          exec java -classpath "$SCRIPT_DIR/gradle/wrapper/gradle-wrapper.jar" org.gradle.wrapper.GradleWrapperMain "$@"
-          GRADLEW
-          chmod +x gradlew
-
-          cat > build.gradle << 'EOF'
-          buildscript {
-              repositories { google(); mavenCentral() }
-              dependencies { classpath 'com.android.tools.build:gradle:8.2.0' }
-          }
-          allprojects { repositories { google(); mavenCentral() } }
-          EOF
-
-          cat > settings.gradle << 'EOF'
-          rootProject.name = "RiderHelper"
-          include ':app'
-          EOF
-
-          cat > app/build.gradle << 'EOF'
-          apply plugin: 'com.android.application'
-          android {
-              namespace 'com.riderhelper'
-              compileSdk 34
-              defaultConfig {
-                  applicationId "com.riderhelper"
-                  minSdk 26
-                  targetSdk 34
-                  versionCode 1
-                  versionName "1.0"
-              }
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_1_8
-                  targetCompatibility JavaVersion.VERSION_1_8
-              }
-          }
-          dependencies {
-              implementation 'androidx.appcompat:appcompat:1.6.1'
-              implementation 'com.google.android.material:material:1.11.0'
-              implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-          }
-          EOF
-
-          cat > gradle.properties << 'EOF'
-          android.useAndroidX=true
-          android.enableJetifier=true
-          EOF
-
-# Fix styles.xml - remove custom theme that references missing attrs
-          cat > app/src/main/res/values/styles.xml << 'EOF'
-          <resources>
-              <style name="Theme.RiderHelper" parent="Theme.AppCompat.Light.DarkActionBar">
-                  <item name="colorPrimary">#FF6B00</item>
-                  <item name="colorPrimaryDark">#CC5500</item>
-                  <item name="colorAccent">#FFA500</item>
-              </style>
-          </resources>
-          EOF
-          ./gradlew assembleDebug
-
+          echo '<resources><style name="Theme.RiderHelper" parent="Theme.AppCompat.Light.DarkActionBar"><item name="colorPrimary">#FF6B00</item><item name="colorPrimaryDark">#CC5500</item><item name="colorAccent">#FFA500</item></style></resources>' > app/src/main/res/values/styles.xml
+          echo '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@color/colorPrimary"/></adaptive-icon>' > app/src/main/res/mipmap-hdpi/ic_launcher.xml
+          cp app/src/main/res/mipmap-hdpi/ic_launcher.xml app/src/main/res/mipmap-hdpi/ic_launcher_round.xml
+          cp app/src/main/res/mipmap-hdpi/ic_launcher.xml app/src/main/res/mipmap-mdpi/ic_launcher.xml
+          cp app/src/main/res/mipmap-hdpi/ic_launcher.xml app/src/main/res/mipmap-mdpi/ic_launcher_round.xml
+          echo '<?xml version="1.0" encoding="utf-8"?><resources><color name="colorPrimary">#FF6B00</color></resources>' > app/src/main/res/values/colors.xml
+          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp/gradle-dist
+          export PATH="/tmp/gradle-dist/gradle-8.2/bin:$PATH"
+          echo 'buildscript{repositories{google();mavenCentral()};dependencies{classpath "com.android.tools.build:gradle:8.2.0"}}allprojects{repositories{google();mavenCentral()}}' > build.gradle
+          echo 'rootProject.name="RiderHelper";include(":app")' > settings.gradle
+          echo 'apply plugin:"com.android.application";android{namespace "com.riderhelper";compileSdk 34;defaultConfig{applicationId "com.riderhelper";minSdk 26;targetSdk 34;versionCode 1;versionName "1.0"};compileOptions{sourceCompatibility JavaVersion.VERSION_1_8;targetCompatibility JavaVersion.VERSION_1_8}};dependencies{implementation "androidx.appcompat:appcompat:1.6.1";implementation "com.google.android.material:material:1.11.0";implementation "androidx.constraintlayout:constraintlayout:2.1.4"}' > app/build.gradle
+          echo 'android.useAndroidX=true' > gradle.properties
+          gradle assembleDebug
       - uses: actions/upload-artifact@v4
         with:
           name: RiderHelper-APK
