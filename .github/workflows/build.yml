@@ -99,6 +99,16 @@ jobs:
           android.enableJetifier=true
           EOF
 
+# Fix styles.xml - remove custom theme that references missing attrs
+          cat > app/src/main/res/values/styles.xml << 'EOF'
+          <resources>
+              <style name="Theme.RiderHelper" parent="Theme.AppCompat.Light.DarkActionBar">
+                  <item name="colorPrimary">#FF6B00</item>
+                  <item name="colorPrimaryDark">#CC5500</item>
+                  <item name="colorAccent">#FFA500</item>
+              </style>
+          </resources>
+          EOF
           ./gradlew assembleDebug
 
       - uses: actions/upload-artifact@v4
