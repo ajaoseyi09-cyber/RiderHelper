@@ -28,7 +28,17 @@ jobs:
           mv strings.xml styles.xml app/src/main/res/values/ 2>/dev/null || true
           mv accessibility_service_config.xml app/src/main/res/xml/ 2>/dev/null || true
           mv card_background.xml app/src/main/res/drawable/ 2>/dev/null || true
+          mkdir -p app/src/main/res/mipmap-hdpi
+          mkdir -p app/src/main/res/mipmap-mdpi
+          mkdir -p app/src/main/res/mipmap-xhdpi
+          mkdir -p app/src/main/res/mipmap-xxhdpi
 
+          # Create simple launcher icons
+          for dpi in mdpi hdpi xhdpi xxhdpi; do
+            cp app/src/main/res/drawable/card_background.xml app/src/main/res/mipmap-$dpi/ic_launcher.xml 2>/dev/null || true
+            cp app/src/main/res/drawable/card_background.xml app/src/main/res/mipmap-$dpi/ic_launcher_round.xml 2>/dev/null || true
+          done
+          
           cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
