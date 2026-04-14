@@ -13,7 +13,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - uses: android-actions/setup-android@v2
-      - name: Create project structure and build
+      - name: Build APK
         run: |
           mkdir -p app/src/main/java/com/riderhelper
           mkdir -p app/src/main/res/layout
@@ -22,7 +22,6 @@ jobs:
           mkdir -p app/src/main/res/drawable
           mkdir -p gradle/wrapper
 
-          # Move files to correct locations
           mv MainActivity.java BootReceiver.java AlertManager.java OrderDetectorService.java AlertForegroundService.java app/src/main/java/com/riderhelper/ 2>/dev/null || true
           mv AndroidManifest.xml app/src/main/ 2>/dev/null || true
           mv activity_main.xml app/src/main/res/layout/ 2>/dev/null || true
@@ -30,7 +29,6 @@ jobs:
           mv accessibility_service_config.xml app/src/main/res/xml/ 2>/dev/null || true
           mv card_background.xml app/src/main/res/drawable/ 2>/dev/null || true
 
-          # Create gradle wrapper properties
           cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
@@ -39,31 +37,29 @@ jobs:
           zipStorePath=wrapper/dists
           EOF
 
-          # Download gradle wrapper jar
-          curl -L "https://github.com/gradle/gradle/raw/v8.2.0/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
+          wget -q "https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar" -O gradle/wrapper/gradle-wrapper.jar || \
+          curl -sL "https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
 
-          # Create gradlew
-          cat > gradlew << 'EOF'
+          cat > gradlew << 'GRADLEW'
           #!/bin/sh
-          exec java -jar "$(dirname $0)/gradle/wrapper/gradle-wrapper.jar" "$@"
-          EOF
+          SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+          exec java -classpath "$SCRIPT_DIR/gradle/wrapper/gradle-wrapper.jar" org.gradle.wrapper.GradleWrapperMain "$@"
+          GRADLEW
           chmod +x gradlew
 
-          # Create root build.gradle
           cat > build.gradle << 'EOF'
           buildscript {
               repositories { google(); mavenCentral() }
               dependencies { classpath 'com.android.tools.build:gradle:8.2.0' }
           }
-          allprojects {
-              repositories { google(); mavenCentral() }
-          }
+          allprojects { repositories { google(); mavenCentral() } }
           EOF
 
-          # Create settings.gradle
-          echo "include ':app'" > settings.gradle
+          cat > settings.gradle << 'EOF'
+          rootProject.name = "RiderHelper"
+          include ':app'
+          EOF
 
-          # Create app/build.gradle
           cat > app/build.gradle << 'EOF'
           apply plugin: 'com.android.application'
           android {
@@ -88,7 +84,6 @@ jobs:
           }
           EOF
 
-          # gradle.properties
           cat > gradle.properties << 'EOF'
           android.useAndroidX=true
           android.enableJetifier=true
