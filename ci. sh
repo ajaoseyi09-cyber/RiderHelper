@@ -1,0 +1,30 @@
+#!/bin/bash
+mkdir -p app/src/main/java/com/riderhelper
+mkdir -p app/src/main/res/layout
+mkdir -p app/src/main/res/values
+mkdir -p app/src/main/res/xml
+mkdir -p app/src/main/res/drawable
+mkdir -p app/src/main/res/mipmap-hdpi
+mkdir -p app/src/main/res/mipmap-mdpi
+mkdir -p gradle/wrapper
+mv MainActivity.java BootReceiver.java AlertManager.java OrderDetectorService.java AlertForegroundService.java app/src/main/java/com/riderhelper/ 2>/dev/null || true
+mv AndroidManifest.xml app/src/main/ 2>/dev/null || true
+mv activity_main.xml app/src/main/res/layout/ 2>/dev/null || true
+mv strings.xml app/src/main/res/values/ 2>/dev/null || true
+mv accessibility_service_config.xml app/src/main/res/xml/ 2>/dev/null || true
+mv card_background.xml app/src/main/res/drawable/ 2>/dev/null || true
+printf '<resources><style name="Theme.RiderHelper" parent="Theme.AppCompat.Light.DarkActionBar"><item name="colorPrimary">#FF6B00</item><item name="colorPrimaryDark">#CC5500</item><item name="colorAccent">#FFA500</item></style></resources>' > app/src/main/res/values/styles.xml
+printf '<resources><color name="colorPrimary">#FF6B00</color></resources>' > app/src/main/res/values/colors.xml
+printf '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@color/colorPrimary"/></adaptive-icon>' > app/src/main/res/mipmap-hdpi/ic_launcher.xml
+cp app/src/main/res/mipmap-hdpi/ic_launcher.xml app/src/main/res/mipmap-hdpi/ic_launcher_round.xml
+cp app/src/main/res/mipmap-hdpi/ic_launcher.xml app/src/main/res/mipmap-mdpi/ic_launcher.xml
+cp app/src/main/res/mipmap-hdpi/ic_launcher.xml app/src/main/res/mipmap-mdpi/ic_launcher_round.xml
+printf '<?xml version="1.0" encoding="utf-8"?><manifest xmlns:android="http://schemas.android.com/apk/res/android"><uses-permission android:name="android.permission.VIBRATE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/><uses-permission android:name="android.permission.WAKE_LOCK"/><application android:allowBackup="true" android:icon="@mipmap/ic_launcher" android:label="Rider Helper" android:roundIcon="@mipmap/ic_launcher_round" android:supportsRtl="true" android:theme="@style/Theme.RiderHelper"><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity><service android:name=".OrderDetectorService" android:exported="true" android:label="Chowdeck Order Detector" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"><intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter><meta-data android:name="android.accessibilityservice" android:resource="@xml/accessibility_service_config"/></service><receiver android:name=".BootReceiver" android:exported="true"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"/></intent-filter></receiver></application></manifest>' > app/src/main/AndroidManifest.xml
+wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip -O /tmp/gradle.zip
+unzip -q /tmp/gradle.zip -d /tmp/gradle-dist
+export PATH="/tmp/gradle-dist/gradle-8.2/bin:$PATH"
+printf 'buildscript {\n  repositories { google(); mavenCentral() }\n  dependencies { classpath "com.android.tools.build:gradle:8.2.0" }\n}\nallprojects { repositories { google(); mavenCentral() } }\n' > build.gradle
+printf 'rootProject.name = "RiderHelper"\ninclude ":app"\n' > settings.gradle
+printf 'apply plugin: "com.android.application"\nandroid {\n  namespace "com.riderhelper"\n  compileSdk 34\n  defaultConfig {\n    applicationId "com.riderhelper"\n    minSdk 26\n    targetSdk 34\n    versionCode 1\n    versionName "1.0"\n  }\n  compileOptions {\n    sourceCompatibility JavaVersion.VERSION_1_8\n    targetCompatibility JavaVersion.VERSION_1_8\n  }\n}\ndependencies {\n  implementation "androidx.appcompat:appcompat:1.6.1"\n  implementation "com.google.android.material:material:1.11.0"\n  implementation "androidx.constraintlayout:constraintlayout:2.1.4"\n}\n' > app/build.gradle
+printf 'android.useAndroidX=true\nandroid.enableJetifier=true\n' > gradle.properties
+gradle assembleDebug
